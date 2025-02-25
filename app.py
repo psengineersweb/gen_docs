@@ -3,11 +3,83 @@ import requests
 import pandas as pd
 from io import BytesIO
 from docx import Document
-from docx.shared import Pt
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
-
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml import OxmlElement, ns
+post_id=0
 # Key Mapping for readability
+
+
+def apply_header_footer(doc):
+    """Applies the same header and footer to all sections of the document."""
+    for section in doc.sections:
+        section.start_type = 2  # Ensure new sections start on a new page
+
+        # === HEADER ===
+        header = section.header
+        header.is_linked_to_previous = False
+        
+        # Create a table with a specified width inside the header
+        header_table = header.add_table(rows=1, cols=2, width=Inches(6.5))
+        header_table.allow_autofit = False
+
+        # Set explicit column widths
+        cell_text = header_table.cell(0, 0)
+        cell_logo = header_table.cell(0, 1)
+        cell_text.width = Inches(5)  # 75% width
+        cell_logo.width = Inches(1.5)  # 25% width
+
+        # HEADER TEXT
+        title = cell_text.paragraphs[0]
+        title.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        run = title.add_run("KOUSHIK KUMAR DAS")
+        run.bold = True
+        run.font.size = Pt(16)
+        run.font.color.rgb = RGBColor(0, 0, 255)  # Blue text
+
+        details = cell_text.add_paragraph()
+        details.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        text = (
+            "M.SC. REAL ESTATE VALUATION, M.I.S.(VALUATION-SURVEYING), AMISE (CIVIL ENGG), "
+            "LIFE ASSOCIATE OF THE INSTITUTION OF SURVEYORS (VALUATION - SURVEYING), F.I.V., "
+            "APPROVED VALUER, INSTITUTION OF VALUERS, BANKS, INSURANCE, FINANCIAL AND INDUSTRIAL "
+            "CORPORATIONS & APPROVED VALUER (CAT-1) OF IMMOVABLE PROPERTY & ENGINEER COMMISSIONER’ "
+            "OF THE OFFICE OF THE CITY CIVIL COURT, CALCUTTA."
+        )
+        run = details.add_run(text)
+        run.font.size = Pt(10)
+        run.font.color.rgb = RGBColor(0, 0, 255)
+
+        # HEADER LOGO
+        paragraph_logo = cell_logo.paragraphs[0]
+        paragraph_logo.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+        run_logo = paragraph_logo.add_run()
+
+        try:
+            run_logo.add_picture("logo.png", width=Inches(1.5))
+        except FileNotFoundError:
+            print("Warning: Logo file not found. Add 'logo.png' to the working directory.")
+
+        # === FOOTER ===
+        footer = section.footer
+        footer.is_linked_to_previous = False
+        footer_paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+        footer_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # Center align the footer
+
+        footer_text = (
+            "OFFICE: 20/1, CHETLA HAT ROAD, P.O. ALIPORE (H.O.), KOLKATA – 700027\n"
+            "MOBILE NOS: 9903068614, 9830776121, 9433240397,\n"
+            "E-MAIL- kkdareport@gmail.com valuerkoushik@yahoo.co.in"
+        )
+
+        run_footer = footer_paragraph.add_run(footer_text)
+        run_footer.italic = True
+        run_footer.font.size = Pt(10)
+        run_footer.font.color.rgb = RGBColor(0, 0, 255)  # Blue color
+
+
 key_map = {
     # Part A - Valuation of Land
     "size_of_plot": "Size of Plot",
@@ -157,7 +229,10 @@ post_id = st.text_input("Enter Post ID:")
 
 if post_id:
     api_urls = {
+        
+        "Generel": f"https://valuerkkda.in/wp-json/generel/generel/?_post_id={post_id}",
         "Part A - Valuation of Land": f"https://valuerkkda.in/wp-json/part-a/part-a/?_post_id={post_id}",
+        "Part - B (Valuation of Building)": f"https://valuerkkda.in/wp-json/part-b/part-b/?_post_id={post_id}",
         "Part C - Extra Items": f"https://valuerkkda.in/wp-json/part-c/part-c/?_post_id={post_id}",
         "Part D - Amenities": f"https://valuerkkda.in/wp-json/part-d/part-d/?_post_id={post_id}",
         "Part E - Miscellaneous": f"https://valuerkkda.in/wp-json/part-e/part-e/?_post_id={post_id}",
@@ -166,41 +241,65 @@ if post_id:
     }
 
     document = Document()
-    document.add_heading(f"Valuation Report for Post ID: {post_id}", level=1)
+
+    apply_header_footer(document)
 
     sections = {
+        "VALUATION REPORT (IN RESPECT OF LAND)": "VALUATION REPORT (IN RESPECT OF LAND)",
+        "Owners": "Owners",
+        "General": api_to_dataframe(api_urls["Generel"]),
         "Part A - Valuation of Land": api_to_dataframe(api_urls["Part A - Valuation of Land"]),
+        "Part - B (Valuation of Building)": api_to_dataframe(api_urls["Part - B (Valuation of Building)"]),
         "Specifications of Construction": split_and_format_specifications(api_to_dataframe(api_urls["Specifications of Construction"])),
+        "Details of Valuation": "Details of Valuation",
         "Part C - Extra Items": api_to_dataframe(api_urls["Part C - Extra Items"]),
         "Part D - Amenities": api_to_dataframe(api_urls["Part D - Amenities"]),
         "Part E - Miscellaneous": api_to_dataframe(api_urls["Part E - Miscellaneous"]),
-        
+        "Part F - Services": api_to_dataframe(api_urls["Part F - Services"]),
+        "PRESENT VALUE OF SAID PROPERTY": "PRESENT VALUE OF SAID PROPERTY",
+        "CERTIFICATE OF STABILITY": "CERTIFICATE OF STABILITY",
+        "VETTED ESTIMATE": "VETTED ESTIMATE",
+        "Format of undertaking to be submitted by Individuals/ proprietor/ partners/ directors DECLARATION- CUM- UNDERTAKING": "Format of undertaking to be submitted by Individuals/ proprietor/ partners/ directors DECLARATION- CUM- UNDERTAKING",
+        "Further, I hereby provide the following information.": "Further, I hereby provide the following information.",
+        "MODEL CODE OF CONDUCT FOR VALUERS": "MODEL CODE OF CONDUCT FOR VALUERS",
     }
 
-    for section, df in sections.items():
-        if not df.empty:
-            st.subheader(section)
-            st.table(df)
-            
-            document.add_heading(section, level=2)
-            docx_table = document.add_table(rows=1, cols=len(df.columns))
-            
-            # Apply table style
-            apply_table_style(docx_table)
+    
 
-            hdr_cells = docx_table.rows[0].cells
-            for i, col_name in enumerate(df.columns):
-                hdr_cells[i].text = col_name
-                hdr_cells[i].paragraphs[0].runs[0].bold = True
+    for section, content in sections.items():
+        st.subheader(section)
+        document.add_heading(section, level=2)
 
-            for _, row in df.iterrows():
-                row_cells = docx_table.add_row().cells
-                for i, value in enumerate(row):
-                    row_cells[i].text = str(value)
-                    row_cells[i].paragraphs[0].runs[0].font.size = Pt(10)
+        # Check if content is a DataFrame
+        if isinstance(content, pd.DataFrame):
+            if not content.empty:
+                st.table(content)
 
+                # Create table in docx
+                docx_table = document.add_table(rows=1, cols=len(content.columns))
+
+                # Apply table style if function exists
+                if "apply_table_style" in globals():
+                    apply_table_style(docx_table)
+
+                hdr_cells = docx_table.rows[0].cells
+                for i, col_name in enumerate(content.columns):
+                    hdr_cells[i].text = col_name
+                    hdr_cells[i].paragraphs[0].runs[0].bold = True
+
+                for _, row in content.iterrows():
+                    row_cells = docx_table.add_row().cells
+                    for i, value in enumerate(row):
+                        row_cells[i].text = str(value)
+                        row_cells[i].paragraphs[0].runs[0].font.size = Pt(10)
+        else:
+            st.write(content)
+            document.add_paragraph(content)
+
+    # Save the Word document
     docx_buffer = BytesIO()
     document.save(docx_buffer)
     docx_buffer.seek(0)
-
+try:
     st.download_button("Download Report", data=docx_buffer, file_name=f"valuation_report_{post_id}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+except: pass
