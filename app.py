@@ -8,6 +8,7 @@ from docx.oxml.ns import nsdecls
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.oxml import OxmlElement, ns
+import json
 post_id=0
 # Key Mapping for readability
 
@@ -123,7 +124,41 @@ key_map = {
     "drainage_arrangements": "Drainage Arrangements",
     "compound_wall": "Compound Wall",
     "c_b_deposits_fittings_etc": "C. B. Deposits, Fittings etc.",
-    "pavement": "Pavement"
+    "pavement": "Pavement",
+
+     "purpose_for_which_the_valuation_is_made": "Purpose for which the valuation is made",
+    "date_of_inspection": "Date of inspection",
+    "date_on_which_the_valuation_is_made": "Date on which the valuation is made",
+    "list_of_documents_produced_for_perusal": "List of documents produced for perusal",
+    "name_and_contact_details_of_the_owner": "Name and Contact Details of the owner",
+    "brief_description_of_the_property": "Brief description of the property",
+    "plot_no__survey_no": "Plot No. / Survey No.",
+    "door_no_": "Door No.",
+    "t_s_no__village_mouza": "T. S. No. / Village/ Mouza",
+    "pin_no": "Pin No:",
+    "postal_address_of_the_property": "Postal address of the property",
+    "city__town_": "Yes",
+    "residential_area_": "Residential Area",
+    "commercial_area_": "Commercial Area",
+    "classification_of_the_area_": "Classification of the area",
+    "coming_under_corporation_limit__village_panchayet__municipality": "Coming under Corporation limit / Village Panchayet / Municipality",
+    "covered_under_govt_enactments_ulc_agencyscheduledcantonment_area": "Covered under Govt. Enactments (ULC, Agency/Scheduled/Cantonment Area)",
+    "agricultural_land_conversion_to_house_site_planned": "Agricultural Land: Conversion to House Site Planned?",
+    "boundaries_of_the_property": "Boundaries of the property",
+    "dimensions_of_the_site": "Dimensions of the site",
+    "latitude": "Latitude",
+    "valuation_least_of_14_a_amp_14_b_": "Longitude",
+    "extent_of_the_site_considered_for_valuation": "Extent of the site considered for valuation (least of 14 A & 14 B)",
+    "extent_of_the_site": "Extent of the site",
+    "whether_occupied_by_": "Whether occupied by the owner / tenant? If occupied by tenant, since how long? Rent received per month.",
+    "technical_details_of_the_building": "Technical details of the building",
+    "exterior_condition_of_the_": "Exterior Condition of the building",
+    "interior_condition_of_the_": "Interior Condition of the building",
+    "date_of_issue_and_validity_of_layout_of_approved_": "Date of issue and validity of layout of approved map / plan",
+    "approved_map__plan_issuing_": "Approved map / plan issuing authority",
+    "whether_genuineness_or_authenticity_of_approved_map__plan_is": "Whether genuineness or authenticity of approved map / plan is verified",
+    "any_other_comments_by_our_empanelled_valuers_on_": "Any other comments by our empanelled valuers on authenticity of approved plan"
+
 }
 
 # Function to apply table style with borders
@@ -177,7 +212,7 @@ def api_to_dataframe(api_url):
         
         if not data:
             st.warning(f"No data found for {api_url}")
-            return pd.DataFrame(columns=['Key', 'Value'])
+            return [pd.DataFrame(columns=['Key', 'Value']),0]
 
         if isinstance(data, dict):
             filtered_data = {key_map.get(k, k): v for k, v in data.items() if k not in excluded_keys}
@@ -191,13 +226,13 @@ def api_to_dataframe(api_url):
         else:
             raise ValueError("Unsupported JSON structure")
 
-        return df
+        return [df, flattened_data]
     except requests.RequestException as e:
         st.error(f"API request failed: {e}")
     except ValueError as ve:
         st.error(f"Data processing error: {ve}")
     
-    return pd.DataFrame(columns=['Key', 'Value'])
+    return [pd.DataFrame(columns=['Key', 'Value']),flattened_data]
 
 def split_and_format_specifications(specifications_df):
     if specifications_df.empty:
@@ -238,8 +273,16 @@ if post_id:
         "Part E - Miscellaneous": f"https://valuerkkda.in/wp-json/part-e/part-e/?_post_id={post_id}",
         "Part F - Services": f"https://valuerkkda.in/wp-json/get_releted_Part_F/get-releted-part-f-/?_post_id={post_id}",
         "Specifications of Construction": f"https://valuerkkda.in/wp-json/specifications/part-specifications/?_post_id={post_id}",
+        "TOTAL ABSTRACT OF THE ENTIRE PROPERTY": f"https://valuerkkda.in/wp-json/abstract/abstract/?_post_id={post_id}",
+        "Details of the Valuation": f"https://valuerkkda.in/wp-json/details/details/?_post_id={post_id}"
     }
-
+    # mjson={}
+    # for post,url in api_urls.items():
+    #     mjson[post]=api_to_dataframe(url)[-1]
+    # with open("mjson.json", "w", encoding="utf-8") as file:
+    #     json.dump(mjson, file, indent=4, ensure_ascii=False)
+    # print("JSON data saved to mjson.json")
+    
     document = Document()
 
     apply_header_footer(document)
@@ -247,15 +290,16 @@ if post_id:
     sections = {
         "VALUATION REPORT (IN RESPECT OF LAND)": "VALUATION REPORT (IN RESPECT OF LAND)",
         "Owners": "Owners",
-        "General": api_to_dataframe(api_urls["Generel"]),
-        "Part A - Valuation of Land": api_to_dataframe(api_urls["Part A - Valuation of Land"]),
-        "Part - B (Valuation of Building)": api_to_dataframe(api_urls["Part - B (Valuation of Building)"]),
-        "Specifications of Construction": split_and_format_specifications(api_to_dataframe(api_urls["Specifications of Construction"])),
-        "Details of Valuation": "Details of Valuation",
-        "Part C - Extra Items": api_to_dataframe(api_urls["Part C - Extra Items"]),
-        "Part D - Amenities": api_to_dataframe(api_urls["Part D - Amenities"]),
-        "Part E - Miscellaneous": api_to_dataframe(api_urls["Part E - Miscellaneous"]),
-        "Part F - Services": api_to_dataframe(api_urls["Part F - Services"]),
+        "General": api_to_dataframe(api_urls["Generel"])[0],
+        "Part A - Valuation of Land": api_to_dataframe(api_urls["Part A - Valuation of Land"])[0],
+        "Part - B (Valuation of Building)": api_to_dataframe(api_urls["Part - B (Valuation of Building)"])[0],
+        "Specifications of Construction": split_and_format_specifications(api_to_dataframe(api_urls["Specifications of Construction"])[0]),
+        "Details of Valuation": api_to_dataframe(api_urls["Details of the Valuation"])[0],
+        "Part C - Extra Items": api_to_dataframe(api_urls["Part C - Extra Items"])[0],
+        "Part D - Amenities": api_to_dataframe(api_urls["Part D - Amenities"])[0],
+        "Part E - Miscellaneous": api_to_dataframe(api_urls["Part E - Miscellaneous"])[0],
+        "Part F - Services": api_to_dataframe(api_urls["Part F - Services"])[0],
+        "TOTAL ABSTRACT OF THE ENTIRE PROPERTY":api_to_dataframe(api_urls["TOTAL ABSTRACT OF THE ENTIRE PROPERTY"])[0],
         "PRESENT VALUE OF SAID PROPERTY": "PRESENT VALUE OF SAID PROPERTY",
         "CERTIFICATE OF STABILITY": "CERTIFICATE OF STABILITY",
         "VETTED ESTIMATE": "VETTED ESTIMATE",
