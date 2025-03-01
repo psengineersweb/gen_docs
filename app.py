@@ -420,7 +420,36 @@ if post_id:
         "VETTED ESTIMATE": "VETTED ESTIMATE",
         "Format of undertaking to be submitted by Individuals/ proprietor/ partners/ directors DECLARATION- CUM- UNDERTAKING": "Format of undertaking to be submitted by Individuals/ proprietor/ partners/ directors DECLARATION- CUM- UNDERTAKING",
         "Further, I hereby provide the following information.": "Further, I hereby provide the following information.",
-        "MODEL CODE OF CONDUCT FOR VALUERS": "MODEL CODE OF CONDUCT FOR VALUERS",
+        "MODEL CODE OF CONDUCT FOR VALUERS": """
+I,  Koushik Kumar Das,   son	of  Late SudhirRanjan Das,    do hereby solemnly affirm and state that: \n
+a.	I am a citizen of India \n
+b.	I will not undertake valuation of any assets in which I have a direct or indirect interest or become so interested at any time during a period of three years prior to my appointment as valuer or three years after the valuation of assets was conducted by me  \n
+c.	The information furnished in my valuation report dated 23.08.2024 is true and correct to the best of my knowledge and belief and I have made an impartial and true valuation of the property.  \n
+d.	My representative personally inspected the property on 20.08.2024. The work is not subcontracted to any other valuer and carried out by myself.  \n
+e.	Valuation report is submitted in the format as prescribed by the Bank.  \n
+f.	I have not been depanelled/ delisted by any other bank and in case any such depanelment by other banks during my empanelment with you, I will inform you within 3 days of such depanelment.  \n
+g.	I have not been removed/dismissed from service/employment earlier  \n
+h.	I have not been convicted of any offence and sentenced to a term of imprisonment . \n
+i.	I have not been found guilty of misconduct in professional capacity  \n
+j.	I have not been declared to be unsound mind  \n
+k.	I am not an undercharged bankrupt, or has not applied to be adjudicated as a bankrupt;  \n
+l.	I am not an undercharged insolvent  \n
+m.	I have not been levied a penalty under section 271J of Income-tax Act, 1961 (43 of 1961) and time limit for filing appeal before Commissioner of Incometax (Appeals) or Income-tax Appellate Tribunal, as the case may be has expired, or such penalty has been confirmed by Income-tax Appellate Tribunal, and five years have not elapsed after levy of such penalty  \n
+n.	I have not been convicted of an offence connected with any proceeding under the Income Tax Act 1961, Wealth Tax Act 1957 or Gift Tax Act 1958 and  \n
+o.	My PAN Card number/Service Tax number as applicable is: AHAPD5062G  \n
+p.	I undertake to keep you informed of any events or happenings which would make me ineligible for empanelment as a valuer \n
+q.	I have not concealed or suppressed any material information, facts and records and I have made a complete and full disclosure  \n
+r.	I have read the Handbook on Policy, Standards and procedure for Real Estate Valuation, 2011 of the IBA and this report is in conformity to the “Standards” enshrined for valuation in the Part-B of the above handbook to the best of my ability. \n
+s.	I have read the International Valuation Standards (IVS) and the report submitted to the Bank for the respective asset class is in conformity to the “Standards” as enshrined for valuation in the IVS in “General Standards” and “Asset Standards” as applicable  \n
+t.	I abide by the Model Code of Conduct for empanelment of valuer in the Bank. (Annexure V- A signed copy of same to be taken and kept along with this declaration)  \n
+u.	I am registered under Section 34 AB of the Wealth Tax Act, 1957. (Strike off, if not applicable)  \n
+v.	I am valuer registered with Insolvency & Bankruptcy Board of India (IBBI) (Strike off, if not applicable)  \n
+w.	My CIBIL Score and credit worthiness is as per Bank’s guidelines.  \n
+x.	I am the proprietor / partner / authorized official of the firm / company, who is competent to sign this valuation report.  \n
+y.	I will undertake the valuation work on receipt of Letter of Engagement generated from the system (i.e. LLMS/LOS) only.  \n
+z.	Further, I hereby provide the following information.  \n
+
+        """,,
     }
 
     
