@@ -8,9 +8,33 @@ from docx.oxml.ns import nsdecls
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.oxml import OxmlElement, ns
+import phpserialize
+
 import json
 post_id=0
+
 # Key Mapping for readability
+def add_images_to_document(image_urls, doc):
+    """
+    Adds images from the given URLs to an existing Word document object.
+
+    :param image_urls: List of image URLs.
+    :param doc: An existing `Document` object.
+    :return: Updated `Document` object.
+    """
+    for url in image_urls:
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Ensure the request was successful
+            image_stream = BytesIO(response.content)
+
+            doc.add_picture(image_stream, width=Inches(4))
+            doc.add_paragraph(url)  # Add image URL for reference
+
+        except requests.exceptions.RequestException as e:
+            doc.add_paragraph(f"Failed to load image: {url} \nError: {e}")
+
+    return doc  # Return the updated document object
 
 
 def apply_header_footer(doc):
@@ -194,7 +218,43 @@ def apply_table_style(table):
     # Add the borders to the table properties
     tblPr.append(tblBorders)
 
+image_links = []
 
+def php_to_structured_string(serialized_php_data):
+    """
+    Converts a PHP-serialized array into a structured string format.
+    Extracts image URLs and appends them to the `image_links` list.
+    """
+    try:
+        if isinstance(serialized_php_data, str):
+            serialized_php_data = serialized_php_data.encode()  # Convert string to bytes
+
+        # Deserialize PHP array
+        parsed_data = phpserialize.loads(serialized_php_data, decode_strings=True)
+
+        # Convert to structured string format
+        structured_output = ""
+        image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg')
+
+        for index, (key, value) in enumerate(parsed_data.items(), start=1):
+            formatted_lines = []
+            for k, v in value.items():
+                formatted_lines.append(f"  {k.replace('_', ' ').title()}: {v}")
+                
+                # Check if value is an image URL and append to the global list
+                if isinstance(v, str) and v.lower().endswith(image_extensions):
+                    image_links.append(v)
+
+            structured_output += "\n".join(formatted_lines) + "\n\n"  # Add spacing between items
+
+        return structured_output.strip()
+
+    except Exception as e:
+        return f"Error parsing PHP-serialized data: {e}"
+
+    except Exception:
+        return serialized_php_data.decode() if isinstance(serialized_php_data, bytes) else serialized_php_data  
+        # Return original value as a fallback
 
 def api_to_dataframe(api_url):
     excluded_keys = {
@@ -234,6 +294,60 @@ def api_to_dataframe(api_url):
     
     return [pd.DataFrame(columns=['Key', 'Value']),flattened_data]
 
+def api_to_dataframe(api_url):
+    """
+    Fetches data from an API, filters out excluded keys, and converts PHP-serialized values to structured strings.
+    """
+    excluded_keys = {
+        "ID", "post_author", "post_date", "post_date_gmt", "post_content", "post_title",
+        "post_excerpt", "post_status", "comment_status", "ping_status", "post_password",
+        "post_name", "to_ping", "pinged", "post_modified", "post_modified_gmt",
+        "post_content_filtered", "post_parent", "guid", "menu_order", "post_type",
+        "post_mime_type", "comment_count", "filter", "meta_ID", "object_ID", "_ID", 
+        "created", "rel_id", "parent_rel", "parent_object_id", "child_object_id",
+    }   
+
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data:
+            st.warning(f"No data found for {api_url}")
+            return [pd.DataFrame(columns=['Key', 'Value']), 0]
+
+        flattened_data = []
+        if isinstance(data, dict):
+            filtered_data = {
+                key_map.get(k, k): php_to_structured_string(v) if isinstance(v, str) and v.startswith("a:") else v
+                for k, v in data.items() if k not in excluded_keys
+            }
+            df = pd.DataFrame(filtered_data.items(), columns=['Key', 'Value'])
+            flattened_data = list(filtered_data.items())
+
+        elif isinstance(data, list):
+            for item in data:
+                filtered_item = {
+                    key_map.get(k, k): php_to_structured_string(v) if isinstance(v, str) and v.startswith("a:") else v
+                    for k, v in item.items() if k not in excluded_keys
+                }
+                flattened_data.extend(filtered_item.items())
+            df = pd.DataFrame(flattened_data, columns=['Key', 'Value'])
+
+        else:
+            raise ValueError("Unsupported JSON structure")
+
+        return [df, flattened_data]
+
+    except requests.RequestException as e:
+        st.error(f"API request failed: {e}")
+    except ValueError as ve:
+        st.error(f"Data processing error: {ve}")
+    
+    return [pd.DataFrame(columns=['Key', 'Value']), flattened_data]
+
+
+
 def split_and_format_specifications(specifications_df):
     if specifications_df.empty:
         return pd.DataFrame(columns=['Description', 'Ground Floor', 'Others Floor'])
@@ -263,6 +377,7 @@ st.title("Valuation Report Generator")
 post_id = st.text_input("Enter Post ID:")
 
 if post_id:
+    
     api_urls = {
         
         "Generel": f"https://valuerkkda.in/wp-json/generel/generel/?_post_id={post_id}",
@@ -340,10 +455,15 @@ if post_id:
             st.write(content)
             document.add_paragraph(content)
 
+            
+    document = add_images_to_document(image_links,document)
+    
+
     # Save the Word document
     docx_buffer = BytesIO()
     document.save(docx_buffer)
     docx_buffer.seek(0)
 try:
     st.download_button("Download Report", data=docx_buffer, file_name=f"valuation_report_{post_id}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    print(image_links)
 except: pass
